@@ -141,7 +141,7 @@ a.btn { display: flex; align-items: center; justify-content: center; text-decora
 .seg { display: grid; gap: 10px; }
 .seg.c3 { grid-template-columns: repeat(3, 1fr); }
 .seg.c2 { grid-template-columns: repeat(2, 1fr); }
-.seg .btn { min-height: 64px; font-size: 20px; }
+.seg .btn { min-height: 64px; font-size: clamp(15px, 4.4vw, 20px); white-space: nowrap; padding: 4px; }
 select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border-radius: 14px; padding: 0 12px; background: #fff; color: var(--ink); }
 
 /* 声で答える */
@@ -208,6 +208,10 @@ select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border
         <span class="date" id="s1date"></span>
         <button class="textbtn" data-go="s6">⚙ せってい</button>
       </div>
+      <div class="notice" id="pushNotice" hidden>
+        まいあさ この アプリから もんだいが とどくように できます。
+        <button class="btn small" id="pushNoticeBtn" style="margin-top:8px">つうちを せっていする</button>
+      </div>
       <span class="chip" id="s1chip"></span>
       <p class="body" id="s1body"></p>
       <div id="s1answerArea"></div>
@@ -226,6 +230,7 @@ select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border
       </div>
       <div class="spacer"></div>
       <button class="btn small" data-go="s4">まえの ネタを みる</button>
+      <button class="btn small" id="backToday" hidden>← きょうの ネタに もどる</button>
     </section>
 
     <!-- S4 履歴 -->
@@ -245,9 +250,8 @@ select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border
       </div>
       <div class="set">
         <h3>とどく じかん</h3>
-        <select id="setTime" aria-label="とどく じかん">
-          <option>6:30</option><option selected>7:00</option><option>7:30</option><option>8:00</option><option>9:00</option>
-        </select>
+        <select id="setTime" aria-label="とどく じかん"></select>
+        <p class="hint" id="setTime2Row" hidden style="text-align:left">2こ めは ゆうがた 18:00 に とどきます</p>
       </div>
       <div class="set">
         <h3>1にちの かず</h3>
@@ -271,6 +275,11 @@ select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border
           <button class="btn" data-v="kids" aria-pressed="false">こども</button>
           <button class="btn" data-v="both" aria-pressed="false">いっしょ</button>
         </div>
+      </div>
+      <div class="set">
+        <h3>まいにちの つうち</h3>
+        <p id="pushStatus" style="font-size:20px;margin:0"></p>
+        <button class="btn" id="pushBtn" hidden>まいにち とどけて もらう</button>
       </div>
       <p class="hint">かえると すぐ ほぞん されます</p>
     </section>
@@ -332,16 +341,18 @@ select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border
   <aside class="panel" aria-label="テスト用の操作">
     <div>
       <h1>テスト用の操作</h1>
-      <p>この上（パソコンでは左）がアプリ画面のテスト版。ネタは見本のなぞなぞ・クイズ7本。気づいたことはお知らせください。</p>
+      <p>αテスト版。この上（パソコンでは左）がアプリ画面。ネタは見本のなぞなぞ・クイズ30本で、毎日1本ずつ変わる。気づいたことはお知らせください。</p>
     </div>
     <div>
-      <h2>1. 朝の通知を再現</h2>
-      <button class="pbtn" id="tNotify">通知を表示する（タップでホームへ）</button>
+      <h2>1. 毎日の通知</h2>
+      <p>せってい画面の「まいにち とどけて もらう」で登録する。状態：<b id="pushPanelStatus">確認中</b></p>
+      <button class="pbtn" id="tPushTest" style="margin-top:8px" disabled>テスト通知を今すぐ送る</button>
+      <button class="pbtn" id="tNotify">画面内で通知を再現する</button>
     </div>
     <div>
-      <h2>2. 評価による個人調整（7章の式）</h2>
+      <h2>2. 評価による個人調整</h2>
       <div class="meters" id="meters"></div>
-      <button class="pbtn" id="tNextDay" style="margin-top:10px">翌日へ進める（調整後の重みで選び直す）</button>
+      <button class="pbtn" id="tNextDay" style="margin-top:10px">あしたのネタを先に見る（評価で選び直した結果）</button>
     </div>
     <div>
       <h2>機能の状態</h2>
@@ -354,121 +365,147 @@ select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border
   </aside>
 </div>
 
+<script src="pool.js"></script>
 <script>
-/* ---------- 見本データ ---------- */
-const POOL = [
-  { id:'n1', genre:'nazonazo', aud:'kids', diff:2,
-    body:'パンは パンでも 食べられない パンは なあに？', kana:'ぱんは ぱんでも たべられない ぱんは なあに？',
-    answer:'フライパン', answerKana:'ふらいぱん', expl:'おりょうりに つかう どうぐだよ',
-    accept:['ふらいぱん'], near:['ぱん','なべ','鍋'] },
-  { id:'n4', genre:'nazonazo', aud:'kids', diff:1,
-    body:'雨が ふると ひらいて、はれると とじる ものは なあに？', kana:'あめが ふると ひらいて、はれると とじる ものは なあに？',
-    answer:'かさ', answerKana:'かさ', expl:'あめの ひの おともだちだよ',
-    accept:['かさ','傘','あまがさ','雨傘'], near:['かっぱ','れいんこーと','ながぐつ','長靴'] },
-  { id:'q1', genre:'quiz', aud:'both', diff:2,
-    body:'パンダの しっぽの 色は？ ①しろ ②くろ', kana:'ぱんだの しっぽの いろは？ ①しろ ②くろ',
-    answer:'①しろ', answerKana:'①しろ', expl:'くろだと おもう人が おおいよ',
-    accept:['しろ','白','いちばん','1ばん','1番','一番','まるいち','ほわいと'], near:['くろ','黒'] },
-  { id:'n2', genre:'nazonazo', aud:'both', diff:3,
-    body:'上は 大水、下は 大火事。これ なあに？', kana:'うえは おおみず、したは おおかじ。これ なあに？',
-    answer:'おふろ', answerKana:'おふろ', expl:'むかしの おふろは 下で 火を たいたよ',
-    accept:['おふろ','お風呂','ふろ','風呂'], near:['なべ','やかん','かじ'] },
-  { id:'n3', genre:'nazonazo', aud:'kids', diff:3,
-    body:'からだじゅう 歯だらけなのに、なにも かめない ものは なあに？', kana:'からだじゅう はだらけなのに、なにも かめない ものは なあに？',
-    answer:'くし（のこぎりも せいかい）', answerKana:'くし（のこぎりも せいかい）', expl:'かみのけを とかす どうぐだよ',
-    accept:['くし','櫛','のこぎり','鋸'], near:['はぶらし','歯ブラシ'] },
-  { id:'q3', genre:'quiz', aud:'both', diff:1,
-    body:'ペンギンは 鳥の なかま？ ①はい ②いいえ', kana:'ぺんぎんは とりの なかま？ ①はい ②いいえ',
-    answer:'①はい', answerKana:'①はい', expl:'そらは とべないけど、とりの なかまだよ',
-    accept:['はい','いちばん','1ばん','1番','一番','まるいち'], near:['いいえ','にばん','2番'] },
-  { id:'q2', genre:'quiz', aud:'adult', diff:3,
-    body:'1年で いちばん 昼が 長い日を なんと いう？ ①夏至 ②冬至', kana:'1ねんで いちばん ひるが ながい ひを なんと いう？ ①げし ②とうじ',
-    answer:'①夏至（げし）', answerKana:'①げし', expl:'6月の 下旬だよ',
-    accept:['げし','夏至','いちばん','1ばん','1番','一番','まるいち'], near:['とうじ','冬至'] },
-];
+/* ---------- 設定 ---------- */
+const PUSH_API = '';   // 通知の送信役（Cloudflare Workers）のURL。デプロイ後に記入する
+const VAPID_PUBLIC = 'BK7MNNfUQSfZSMrKjtk28cPVZB1kgs4UQF5Y6Co1zY6Ep_hqYij6qLpR-t1LJKRBSeIx9il1045uKsL2FuB2-AE';
+const POOL = self.HITONETA_POOL;
 const GENRE = { nazonazo:'なぞなぞ', quiz:'クイズ' };
-
-/* ---------- 状態 ---------- */
-const st = {
-  aud:'adult', font:28, perDay:1, day:0,
-  prefs:{ d:2.5, w:{ nazonazo:1, quiz:1 }, recent:[] },
-  today:null, history:[], revealed:false, fun:null, level:null, tries:0, aiItem:null,
-};
-const D0 = new Date(2026, 10, 19);
+const GENRE_KANA = { nazonazo:'なぞなぞ', quiz:'くいず' };
 const $ = id => document.getElementById(id);
 const log = msg => { const p = document.createElement('div'); p.textContent = new Date().toLocaleTimeString('ja-JP') + '  ' + msg; $('log').prepend(p); };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const byId = id => POOL.find(c => c.id === id);
 
-function fmtDate(off) {
-  const d = new Date(D0); d.setDate(d.getDate() + off);
-  return `${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+/* ---------- 日付（端末の時計＝日本時間） ---------- */
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+function fmtKey(key) {
+  const [y, m, d] = key.slice(0, 10).split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${m}月${d}日（${'日月火水木金土'[dt.getDay()]}）` + (key.endsWith('_pm') ? ' ゆう' : '');
 }
+
+/* ---------- 保存（この端末の中だけ） ---------- */
+const STORE = 'hitoneta-alpha-1';
+const DEF = { aud:'adult', font:28, perDay:1, times:['07:00','18:00'],
+  prefs:{ d:2.5, w:{ nazonazo:1, quiz:1 } }, picks:{}, fb:{}, revealed:{}, pushEndpoint:null };
+const st = (() => { try { const v = JSON.parse(localStorage.getItem(STORE)); if (v) return Object.assign(JSON.parse(JSON.stringify(DEF)), v); } catch {} return JSON.parse(JSON.stringify(DEF)); })();
+function save() { try { localStorage.setItem(STORE, JSON.stringify(st)); } catch {} publishPlan(); }
+const slots = () => st.perDay === 2 ? ['am', 'pm'] : ['am'];
+const slotTimes = () => slots().map(s => s === 'am' ? st.times[0] : st.times[1]);
 const kids = () => st.aud === 'kids' || st.aud === 'both';
 const txt = (c, k) => (st.aud === 'kids' ? c[k === 'body' ? 'kana' : 'answerKana'] : c[k]);
+function currentKey() {
+  const now = new Date(), d = ymd(now);
+  if (st.perDay === 2) { const [h, m] = st.times[1].split(':').map(Number); if (now.getHours() * 60 + now.getMinutes() >= h * 60 + m) return d + '_pm'; }
+  return d + '_am';
+}
 
-/* ---------- 選定（設計書7章） ---------- */
+/* ---------- 選定（設計書7章の式） ---------- */
 function eligible(c) {
   if (st.aud === 'kids') return c.aud === 'kids';
   if (st.aud === 'both') return c.aud === 'kids' || c.aud === 'both';
   return c.aud === 'both' || c.aud === 'adult';
 }
-function pick(excludeIds) {
-  const r = st.prefs.recent.slice(-2);
+function hash(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+function pick(key, used, recentGenres) {
+  let cand = POOL.filter(c => eligible(c) && !used.includes(c.id));
+  if (!cand.length) cand = POOL.filter(eligible);
   let best = null, bs = -1;
-  for (const c of POOL) {
-    if (!eligible(c) || excludeIds.includes(c.id)) continue;
-    const s = st.prefs.w[c.genre] * Math.exp(-((c.diff - st.prefs.d) ** 2) / 2) * (r.includes(c.genre) ? 0.5 : 1);
+  for (const c of cand) {
+    const s = st.prefs.w[c.genre] * Math.exp(-((c.diff - st.prefs.d) ** 2) / 2)
+      * (recentGenres.slice(-2).every(g => g === c.genre) && recentGenres.length >= 2 ? 0.5 : 1)
+      * (0.9 + 0.2 * hash(key + c.id));
     if (s > bs) { bs = s; best = c; }
   }
-  return best || POOL.find(eligible);
+  return best;
+}
+// 今日までは固定し、明日から14日先までを最新の評価で選び直す
+function plan() {
+  const today = new Date(), todayStr = ymd(today), cutoff = ymd(addDays(today, -90));
+  for (const k of Object.keys(st.picks)) {
+    const d = k.slice(0, 10);
+    if (d > todayStr || d < cutoff) delete st.picks[k];
+  }
+  for (let i = 0; i < 14; i++) {
+    const d = ymd(addDays(today, i));
+    for (const sl of slots()) {
+      const key = `${d}_${sl}`;
+      const have = byId(st.picks[key]);
+      if (have && eligible(have)) continue;
+      const past = Object.keys(st.picks).filter(k => k < key).sort();
+      const used = past.slice(-Math.min(POOL.length - 1, 40)).map(k => st.picks[k]);
+      const recent = past.slice(-2).map(k => (byId(st.picks[k]) || {}).genre).filter(Boolean);
+      st.picks[key] = pick(key, used, recent).id;
+    }
+  }
+}
+// 通知の表示役（sw.js）が読めるよう、予定をキャッシュに置く
+async function publishPlan() {
+  try {
+    if (!('caches' in window)) return;
+    const c = await caches.open('hitoneta-data');
+    await c.put('plan.json', new Response(JSON.stringify({ aud: st.aud, picks: st.picks }), { headers: { 'Content-Type': 'application/json' } }));
+  } catch {}
 }
 
-/* ---------- 描画 ---------- */
+/* ---------- 表示中のネタ ---------- */
+let view = { key: currentKey(), preview: false };
+const cur = () => byId(st.picks[view.key]) || POOL.find(eligible);
+const isRevealed = () => !!st.revealed[view.key];
+function setRevealed() { st.revealed[view.key] = true; save(); }
+
 function show(id) {
   for (const s of ['s1','s3','s4','s6','s7']) $(s).hidden = s !== id;
   $('s2').hidden = true;
   if (id === 's1') renderHome();
   if (id === 's4') renderHistory();
+  if (id === 's6') { renderSettings(); renderPush(); }
 }
 function renderHome() {
-  const c = st.today;
-  $('s1date').textContent = fmtDate(st.day);
-  $('s1chip').textContent = (st.aud === 'kids' ? '' : '【') + (st.aud === 'kids' ? { nazonazo:'なぞなぞ', quiz:'くいず' }[c.genre] : GENRE[c.genre]) + (st.aud === 'kids' ? '' : '】');
+  const c = cur(), fb = st.fb[c.id] || {};
+  $('s1date').textContent = fmtKey(view.key) + (view.preview ? '（さきどり）' : '');
+  $('s1chip').textContent = st.aud === 'kids' ? GENRE_KANA[c.genre] : `【${GENRE[c.genre]}】`;
   $('s1chip').className = 'chip ' + c.genre;
   $('s1body').textContent = txt(c, 'body');
   const area = $('s1answerArea'); area.innerHTML = '';
-  const canVoice = true;
-  if (st.revealed) {
+  if (isRevealed()) {
     const a = document.createElement('div'); a.className = 'answer';
     a.textContent = 'こたえ：' + txt(c, 'answer');
     if (c.expl) { const s = document.createElement('small'); s.textContent = c.expl; a.append(s); }
     area.append(a);
   } else {
-    // 答えは常に伏せて出す。押したときだけ表示する
     const g = document.createElement('div'); g.style.cssText = 'display:grid;gap:12px';
-    const r = document.createElement('button'); r.className = 'btn';
-    r.textContent = canVoice ? 'こたえを みる' : 'どこが おもしろい？';
-    r.onclick = () => { st.revealed = true; log('こたえを表示'); renderHome(); };
-    g.append(r);
-    if (canVoice) { const v = document.createElement('button'); v.className = 'btn'; v.textContent = '🎤 こえで こたえる'; v.onclick = openVoice; g.append(v); }
-    area.append(g);
+    const r = document.createElement('button'); r.className = 'btn'; r.textContent = 'こたえを みる';
+    r.onclick = () => { setRevealed(); log('こたえを表示'); renderHome(); };
+    const v = document.createElement('button'); v.className = 'btn'; v.textContent = '🎤 こえで こたえる'; v.onclick = openVoice;
+    g.append(r, v); area.append(g);
   }
-  for (const b of $('fbFun').children) b.setAttribute('aria-pressed', String(b.dataset.fun === st.fun));
-  for (const b of $('fbLevel').children) b.setAttribute('aria-pressed', String(b.dataset.level === st.level));
-  $('fbLevel').hidden = !st.fun;
+  for (const b of $('fbFun').children) b.setAttribute('aria-pressed', String(b.dataset.fun === fb.fun));
+  for (const b of $('fbLevel').children) b.setAttribute('aria-pressed', String(b.dataset.level === fb.level));
+  $('fbLevel').hidden = !fb.fun;
+  $('backToday').hidden = view.key === currentKey() && !view.preview;
   document.documentElement.style.setProperty('--body-size', st.font + 'px');
+  renderPushNotice();
   renderMeters();
 }
 function renderHistory() {
   const L = $('histList'); L.innerHTML = '';
-  if (!st.history.length) { L.innerHTML = '<p style="font-size:22px">まだ ありません。テスト操作の「翌日へ進める」で ふえます。</p>'; return; }
-  st.history.slice().reverse().forEach(h => {
+  const now = currentKey();
+  const keys = Object.keys(st.picks).filter(k => k < now).sort().reverse().slice(0, 90);
+  if (!keys.length) { L.innerHTML = '<p style="font-size:22px">まだ ありません。あしたから ここに ならびます。</p>'; return; }
+  for (const k of keys) {
+    const c = byId(st.picks[k]); if (!c) continue;
     const b = document.createElement('button'); b.className = 'item';
     b.innerHTML = `<span class="t"><span class="d"></span></span><span class="go" aria-hidden="true">›</span>`;
-    b.querySelector('.d').textContent = `${fmtDate(h.day)} ${GENRE[h.c.genre]}`;
-    b.querySelector('.t').append(txt(h.c, 'body'));
-    b.onclick = () => { st.today = h.c; st.revealed = false; st.fun = null; st.level = null; show('s1'); log('履歴から表示：' + h.c.id); };
+    b.querySelector('.d').textContent = `${fmtKey(k)} ${st.aud === 'kids' ? GENRE_KANA[c.genre] : GENRE[c.genre]}`;
+    b.querySelector('.t').append(txt(c, 'body'));
+    b.onclick = () => { view = { key: k, preview: false }; show('s1'); log('履歴から表示：' + c.id); };
     L.append(b);
-  });
+  }
 }
 function renderMeters() {
   const m = $('meters'); m.innerHTML = '';
@@ -481,35 +518,33 @@ function renderMeters() {
   row('なぞなぞ', st.prefs.w.nazonazo, 2);
   row('クイズ', st.prefs.w.quiz, 2);
 }
+$('backToday').onclick = () => { view = { key: currentKey(), preview: false }; show('s1'); };
 
 /* ---------- 読み上げ ---------- */
 let tts = null;
 async function speak(text) {
   try {
-    if (tts) { await tts.speak(text, { language:'ja', rate:0.85 }); return; }
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 0.85;
       await new Promise(r => { u.onend = r; u.onerror = r; speechSynthesis.speak(u); });
     }
-  } catch (e) { log('読み上げできませんでした：' + (e.code || e.message || e)); }
+  } catch (e) { log('読み上げできませんでした：' + (e.message || e)); }
 }
 $('s1speak').onclick = () => {
-  const c = st.today;
-  const showAns = st.revealed;
-  speak(txt(c, 'body') + (showAns ? '。　こたえは、' + txt(c, 'answer') : ''));
+  const c = cur();
+  speak(txt(c, 'body') + (isRevealed() ? '。　こたえは、' + txt(c, 'answer') : ''));
   log('よみあげ');
 };
 
 /* ---------- 共有 ---------- */
 function shareText(withAns) {
-  const c = st.today, k = st.aud === 'kids';
-  const head = `【きょうの ${k ? { nazonazo:'なぞなぞ', quiz:'くいず' }[c.genre] : GENRE[c.genre]}】`;
+  const c = cur();
+  const head = `【きょうの ${st.aud === 'kids' ? GENRE_KANA[c.genre] : GENRE[c.genre]}】`;
   if (withAns) return `${head}\n${txt(c,'body')}\nこたえ：${txt(c,'answer')}`;
   return `${head}\n${txt(c,'body')}\nわかったら へんじしてね。こたえは あとで おしえるね！`;
 }
 function openShare() {
-  const c = st.today;
   $('lineWith').href = 'https://line.me/R/share?text=' + encodeURIComponent(shareText(true));
   $('lineHidden').href = 'https://line.me/R/share?text=' + encodeURIComponent(shareText(false));
   $('preview').textContent = 'おくる文のみほん：\n' + shareText(true);
@@ -533,29 +568,28 @@ $('copyText').onclick = async () => {
   catch { $('preview').textContent = 'コピーできませんでした。下の文を長押しして コピーしてください：\n' + shareText(true); }
 };
 
-/* ---------- 評価 ---------- */
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+/* ---------- 評価（押し直すと前回分を戻してから反映） ---------- */
 $('fbFun').onclick = e => {
   const b = e.target.closest('[data-fun]'); if (!b) return;
-  const prev = st.fun, g = st.today.genre;
-  if (prev === 'good') st.prefs.w[g] -= 0.15; if (prev === 'bad') st.prefs.w[g] += 0.15;   // 押し直しは前回分を戻す
-  st.fun = b.dataset.fun;
-  if (st.fun === 'good') st.prefs.w[g] += 0.15; if (st.fun === 'bad') st.prefs.w[g] -= 0.15;
+  const c = cur(), g = c.genre, fb = st.fb[c.id] || (st.fb[c.id] = {});
+  if (fb.fun === 'good') st.prefs.w[g] -= 0.15; if (fb.fun === 'bad') st.prefs.w[g] += 0.15;
+  fb.fun = b.dataset.fun;
+  if (fb.fun === 'good') st.prefs.w[g] += 0.15; if (fb.fun === 'bad') st.prefs.w[g] -= 0.15;
   st.prefs.w[g] = clamp(st.prefs.w[g], 0.3, 2.0);
-  log('評価：' + b.textContent); renderHome();
+  plan(); save(); log('評価：' + b.textContent); renderHome();
 };
 $('fbLevel').onclick = e => {
   const b = e.target.closest('[data-level]'); if (!b) return;
-  const prev = st.level;
-  if (prev === 'hard') st.prefs.d += 0.3; if (prev === 'easy') st.prefs.d -= 0.3;
-  st.level = b.dataset.level;
-  if (st.level === 'hard') st.prefs.d -= 0.3; if (st.level === 'easy') st.prefs.d += 0.3;
+  const c = cur(), fb = st.fb[c.id] || (st.fb[c.id] = {});
+  if (fb.level === 'hard') st.prefs.d += 0.3; if (fb.level === 'easy') st.prefs.d -= 0.3;
+  fb.level = b.dataset.level;
+  if (fb.level === 'hard') st.prefs.d -= 0.3; if (fb.level === 'easy') st.prefs.d += 0.3;
   st.prefs.d = clamp(st.prefs.d, 1, 5);
-  log('難易度：' + b.textContent); renderHome();
+  plan(); save(); log('難易度：' + b.textContent); renderHome();
 };
 
 /* ---------- 声で答える ---------- */
-let dict = null, heardText = '', silenceT = null, maxT = null, listening = false;
+let dict = null, heardText = '', silenceT = null, maxT = null, listening = false, tries = 0;
 function norm(s) {
   return (s || '').normalize('NFKC')
     .replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
@@ -577,7 +611,7 @@ function judge(heard, c) {
   return 'wrong';
 }
 function openVoice() {
-  const c = st.today; st.tries = 0;
+  const c = cur(); tries = 0;
   $('s7body').textContent = txt(c, 'body');
   $('s7ask').hidden = false; $('s7result').hidden = true;
   $('s7send').hidden = true; $('s7retry').hidden = true; $('s7reveal').hidden = false;
@@ -589,10 +623,10 @@ function openVoice() {
   log('声で答える：開始');
 }
 function finishAnswer(text, via) {
-  const c = st.today; st.tries++;
+  const c = cur(); tries++;
   const v = judge(text, c);
   log(`判定（${via}）：「${text}」→ ${v}`);
-  if (v === 'empty') { $('micHint').textContent = 'きこえなかったよ。もういちど おしてね'; return; }
+  if (v === 'empty') { $('micHint').textContent = 'きこえなかったよ。もういちど おしてね'; tries--; return; }
   $('s7ask').hidden = true; $('s7result').hidden = false;
   const ans = txt(c, 'answer');
   let say;
@@ -600,9 +634,9 @@ function finishAnswer(text, via) {
     $('verdict').textContent = 'せいかい！'; $('verdict').className = 'verdict correct';
     $('verdictSub').textContent = 'こたえ：' + ans;
     say = 'せいかい！　こたえは、' + ans + '。だれかに だしてみよう';
-    if (st.tries === 1) st.prefs.d = clamp(st.prefs.d + 0.1, 1, 5);
+    if (tries === 1) st.prefs.d = clamp(st.prefs.d + 0.1, 1, 5);
     $('s7send').hidden = false; $('s7retry').hidden = true; $('s7reveal').hidden = true;
-  } else if (st.tries >= 3) {
+  } else if (tries >= 3) {
     $('verdict').textContent = 'こたえは…'; $('verdict').className = 'verdict';
     $('verdictSub').textContent = ans; say = 'こたえは、' + ans + 'でした';
     st.prefs.d = clamp(st.prefs.d - 0.1, 1, 5);
@@ -610,26 +644,25 @@ function finishAnswer(text, via) {
   } else {
     $('verdict').textContent = v === 'near' ? 'おしい！' : 'ちがうみたい';
     $('verdict').className = 'verdict ' + (v === 'near' ? 'near' : '');
-    $('verdictSub').textContent = `「${text}」って きこえたよ。あと ${3 - st.tries}かい`;
+    $('verdictSub').textContent = `「${text}」って きこえたよ。あと ${3 - tries}かい`;
     say = v === 'near' ? 'おしい！　もうちょっと' : 'ちがうみたい。もういちど どうぞ';
     $('s7retry').hidden = false; $('s7send').hidden = true;
   }
-  st.revealed = v === 'correct' || st.tries >= 3 ? true : st.revealed;
-  renderMeters();
+  if (v === 'correct' || tries >= 3) st.revealed[view.key] = true;
+  plan(); save(); renderMeters();
   speak(say);
 }
 $('s7retry').onclick = () => { $('s7ask').hidden = false; $('s7result').hidden = true; $('s7retry').hidden = true; $('heard').textContent = ''; $('typedInput').value = ''; };
-$('s7reveal').onclick = () => { st.revealed = true; log('声で答える：こたえを みる'); show('s1'); };
+$('s7reveal').onclick = () => { setRevealed(); log('声で答える：こたえを みる'); show('s1'); };
 $('s7close').onclick = () => { if (listening && dict) dict.stop().catch(()=>{}); show('s1'); };
 $('typedForm').onsubmit = e => { e.preventDefault(); const v = $('typedInput').value.trim(); if (v) finishAnswer(v, '文字'); };
-
 function armSilence() { clearTimeout(silenceT); silenceT = setTimeout(() => { if (listening) dict.stop().catch(()=>{}); }, 1600); }
 $('micBtn').onclick = () => {
   if (!dict) return;
   if (listening) { dict.stop().catch(()=>{}); return; }
   heardText = ''; $('heard').textContent = '';
   if ('speechSynthesis' in window) speechSynthesis.cancel();
-  dict.start().then(() => {}).catch(e => {
+  dict.start().catch(e => {
     const code = e && e.code;
     $('micHint').textContent = code === 'not_granted' ? 'マイクが つかえません。もじで こたえてね' : 'マイクを はじめられませんでした。もういちど おしてね';
     if (code === 'not_granted') $('micBtn').hidden = true;
@@ -638,44 +671,112 @@ $('micBtn').onclick = () => {
   clearTimeout(maxT); maxT = setTimeout(() => { if (listening) dict.stop().catch(()=>{}); }, 8000);
 };
 
-/* ---------- テスト操作 ---------- */
-$('tNotify').onclick = () => {
-  const c = st.today;
-  $('bnTitle').textContent = `【${GENRE[c.genre]}】` + txt(c, 'body');
-  $('bnBody').textContent = 'こたえは アプリで。こえで こたえてみよう';
-  $('banner').hidden = false; log('通知を表示');
+/* ---------- 毎日の通知（Web Push） ---------- */
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function pushState() {
+  if (!('serviceWorker' in navigator)) return 'unsupported';
+  if (isIOS() && !standalone()) return 'ios-install';
+  if (!('PushManager' in window) || !('Notification' in window)) return 'unsupported';
+  if (!PUSH_API) return 'not-ready';
+  if (Notification.permission === 'denied') return 'denied';
+  return st.pushEndpoint && Notification.permission === 'granted' ? 'on' : 'off';
+}
+const PUSH_TEXT = {
+  'unsupported': 'この ブラウザでは つうちを うけとれません。iPhoneは Safari、Androidは Chrome で ひらいてください。',
+  'ios-install': 'iPhoneでは、Safariの きょうゆうボタン（□に↑）→「ホームがめんに ついか」を して、ホームの アイコンから ひらいてください。',
+  'not-ready': 'つうちの じゅんびちゅう です。もう すこし おまちください。',
+  'denied': 'つうちが オフに なっています。スマホの せっていで この アプリの つうちを オンに してください。',
+  'off': 'まだ つうちは とどきません。',
 };
-$('banner').onclick = () => { $('banner').hidden = true; show('s1'); log('通知タップ → ホーム'); };
-$('tNextDay').onclick = () => {
-  st.history.push({ day: st.day, c: st.today });
-  st.prefs.recent.push(st.today.genre);
-  st.day++; st.revealed = false; st.fun = null; st.level = null; st.aiItem = null;
-  const used = st.history.slice(-3).map(h => h.c.id);
-  st.today = pick(used);
-  log(`翌日へ：${st.today.id}（${GENRE[st.today.genre]}・難易度${st.today.diff}）を選定`);
-  show('s1');
+function renderPush() {
+  const s = pushState();
+  $('pushStatus').textContent = s === 'on' ? `まいにち ${slotTimes().join('と ')} に とどきます。` : PUSH_TEXT[s];
+  $('pushBtn').hidden = !(s === 'on' || s === 'off');
+  $('pushBtn').textContent = s === 'on' ? 'つうちを とめる' : 'まいにち とどけて もらう';
+  $('tPushTest').disabled = s !== 'on';
+  $('pushPanelStatus').textContent = { on:'登録済み', off:'未登録', denied:'端末の設定で拒否', 'ios-install':'ホーム画面への追加が必要', 'not-ready':'送信役が未設定', unsupported:'このブラウザは非対応' }[s];
+}
+function renderPushNotice() { $('pushNotice').hidden = pushState() === 'on' || pushState() === 'not-ready'; }
+const b64uToBytes = s => { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); return Uint8Array.from(b, ch => ch.charCodeAt(0)); };
+async function api(path, body) {
+  const r = await fetch(PUSH_API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((j.error || 'error') + '（' + r.status + '）');
+  return j;
+}
+async function syncPush() {
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) { st.pushEndpoint = null; save(); return; }
+  await api('/subscribe', { subscription: sub.toJSON(), times: slotTimes(), aud: st.aud });
+  st.pushEndpoint = sub.endpoint; save();
+  log('通知の登録：' + slotTimes().join('・'));
+}
+$('pushBtn').onclick = async () => {
+  const s = pushState();
+  try {
+    if (s === 'on') {
+      const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+      if (sub) { await api('/unsubscribe', { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); }
+      st.pushEndpoint = null; save(); log('通知を停止');
+    } else {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { log('通知が許可されませんでした'); renderPush(); return; }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(VAPID_PUBLIC) });
+      await syncPush();
+    }
+  } catch (e) { log('通知の設定に失敗：' + (e.message || e)); $('pushStatus').textContent = 'うまく いきませんでした。もういちど おしてください。'; }
+  renderPush(); renderPushNotice();
 };
+$('tPushTest').onclick = async () => {
+  try { const j = await api('/test', { endpoint: st.pushEndpoint }); log(j.ok ? 'テスト通知を送信しました' : 'テスト通知の送信失敗（' + j.status + '）'); }
+  catch (e) { log('テスト通知の送信失敗：' + (e.message || e)); }
+};
+$('pushNoticeBtn').onclick = () => show('s6');
 
-/* 設定 */
+/* ---------- 設定 ---------- */
 function segBind(id, fn) {
   $(id).onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return;
     for (const x of $(id).children) x.setAttribute('aria-pressed', String(x === b)); fn(b.dataset.v); };
 }
-segBind('setFont', v => { st.font = +v; document.documentElement.style.setProperty('--body-size', v + 'px'); log('文字の大きさ：' + v + 'pt'); });
-segBind('setPerDay', v => { st.perDay = +v; log('1日の数：' + v); });
+function renderSettings() {
+  for (const [id, val] of [['setFont', String(st.font)], ['setPerDay', String(st.perDay)], ['setAud', st.aud]])
+    for (const x of $(id).children) x.setAttribute('aria-pressed', String(x.dataset.v === val));
+  $('setTime').value = st.times[0];
+  $('setTime2Row').hidden = st.perDay !== 2;
+}
+(function fillTimes() {
+  for (let m = 5 * 60; m <= 11 * 60 + 45; m += 15) { const o = document.createElement('option'); o.value = o.textContent = `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; $('setTime').append(o); }
+})();
+const afterSettings = () => { plan(); save(); if (pushState() === 'on') syncPush().catch(e => log('通知の更新に失敗：' + e.message)); renderSettings(); renderPush(); };
+segBind('setFont', v => { st.font = +v; document.documentElement.style.setProperty('--body-size', v + 'px'); save(); log('文字の大きさ：' + v + 'pt'); });
+segBind('setPerDay', v => { st.perDay = +v; log('1日の数：' + v); afterSettings(); });
 segBind('setAud', v => {
-  st.aud = v; st.prefs.d = { kids:1.5, both:2.0, adult:2.5 }[v]; st.revealed = false;
-  if (!eligible(st.today)) st.today = pick([]);
+  st.aud = v; st.prefs.d = { kids:1.5, both:2.0, adult:2.5 }[v];
   log('つかうひと：' + { adult:'おとな', kids:'こども', both:'いっしょ' }[v]);
+  const t = currentKey(); delete st.picks[t]; delete st.revealed[t];
+  afterSettings(); view = { key: currentKey(), preview: false };
 });
-$('setTime').onchange = e => log('とどく時間：' + e.target.value);
-document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+$('setTime').onchange = e => { st.times[0] = e.target.value; log('とどく時間：' + e.target.value); afterSettings(); };
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { if (b.dataset.go === 's1') view = { key: currentKey(), preview: false }; show(b.dataset.go); });
 
-/* ---------- 起動 ---------- */
-st.today = pick([]);
-show('s1');
-log('起動：' + st.today.id);
+/* ---------- テスト操作 ---------- */
+$('tNotify').onclick = () => {
+  const c = cur();
+  $('bnTitle').textContent = `【きょうの ${GENRE[c.genre]}】`;
+  $('bnBody').textContent = txt(c, 'body') + '　こたえは アプリで';
+  $('banner').hidden = false; log('画面内で通知を再現');
+};
+$('banner').onclick = () => { $('banner').hidden = true; show('s1'); };
+$('tNextDay').onclick = () => {
+  const k = ymd(addDays(new Date(), 1)) + '_am';
+  view = { key: k, preview: true }; show('s1'); log('あしたのネタを先取り表示：' + st.picks[k]);
+};
 
+/* ---------- 音声認識（ブラウザ標準） ---------- */
 function makeDict() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
@@ -702,11 +803,6 @@ function makeDict() {
   };
 }
 dict = makeDict();
-$('capStatus').textContent = [
-  '読み上げ：' + ('speechSynthesis' in window ? '使えます' : '使えません'),
-  'マイク：' + (dict ? '使えます' : '使えません（文字入力で代用）'),
-  '共有シート：' + (navigator.share ? '使えます' : '使えません（文をコピー）'),
-].join(' ／ ');
 if (dict) {
   let was = false;
   dict.onPartial(({ text }) => { $('heard').textContent = (heardText + text) || '…'; armSilence(); });
@@ -722,7 +818,23 @@ if (dict) {
     was = false;
   });
 }
+
+/* ---------- 起動 ---------- */
+plan(); save();
+{ const k = new URLSearchParams(location.search).get('k'); if (k && st.picks[k]) view = { key: k, preview: false }; }
+show('s1');
+$('capStatus').textContent = [
+  '読み上げ：' + ('speechSynthesis' in window ? '使えます' : '使えません'),
+  'マイク：' + (dict ? '使えます' : '使えません（文字入力で代用）'),
+  '共有シート：' + (navigator.share ? '使えます' : '使えません（文をコピー）'),
+].join(' ／ ');
+renderPush();
+log('起動：' + view.key + ' → ' + cur().id);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// 画面に戻ってきたら日付をまたいでいないか確かめる
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !view.preview && view.key < currentKey() && !$('s1').hidden) { plan(); save(); view = { key: currentKey(), preview: false }; show('s1'); }
+});
 </script>
 </body>
 </html>

@@ -1,0 +1,35 @@
+name: 通知の送信役をデプロイ
+
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', '.github/workflows/deploy-worker.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: KVのIDを書き込む
+        id: kv
+        env:
+          KV_ID: ${{ secrets.KV_ID }}
+        run: |
+          if [ -z "$KV_ID" ]; then
+            echo "シークレットが未設定のため、デプロイを飛ばす"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            sed -i "s/__KV_ID__/$KV_ID/" worker/wrangler.toml
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: cloudflare/wrangler-action@v3
+        if: steps.kv.outputs.ready == 'true'
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          secrets: |
+            VAPID_PRIVATE_JWK
+        env:
+          VAPID_PRIVATE_JWK: ${{ secrets.VAPID_PRIVATE_JWK }}

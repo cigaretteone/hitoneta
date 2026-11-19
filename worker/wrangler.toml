@@ -1,0 +1,14 @@
+name = "hitoneta-push"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+VAPID_PUBLIC = "BK7MNNfUQSfZSMrKjtk28cPVZB1kgs4UQF5Y6Co1zY6Ep_hqYij6qLpR-t1LJKRBSeIx9il1045uKsL2FuB2-AE"
+VAPID_SUBJECT = "https://cigaretteone.github.io/hitoneta/"
+
+[[kv_namespaces]]
+binding = "SUBS"
+id = "__KV_ID__"
