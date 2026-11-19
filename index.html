@@ -438,21 +438,20 @@ function renderHome() {
   $('s1body').textContent = txt(c, 'body');
   const area = $('s1answerArea'); area.innerHTML = '';
   const canVoice = c.genre !== 'dajare';
-  if (!kids() || st.revealed || !canVoice) {
+  if (st.revealed) {
     const a = document.createElement('div'); a.className = 'answer';
-    a.textContent = (c.genre === 'dajare' ? 'オチ：' : (st.aud === 'kids' ? 'こたえ：' : 'こたえ：')) + txt(c, 'answer');
+    a.textContent = (c.genre === 'dajare' ? 'オチ：' : 'こたえ：') + txt(c, 'answer');
     if (c.expl) { const s = document.createElement('small'); s.textContent = c.expl; a.append(s); }
     area.append(a);
-    if (!kids() && canVoice) {
-      const b = document.createElement('button'); b.className = 'btn small'; b.style.marginTop = '12px';
-      b.textContent = '🎤 こえで あそぶ'; b.onclick = openVoice; area.append(b);
-    }
   } else {
-    const g = document.createElement('div'); g.className = 'row2';
-    const r = document.createElement('button'); r.className = 'btn'; r.textContent = 'こたえを みる';
+    // 答えは常に伏せて出す。押したときだけ表示する
+    const g = document.createElement('div'); g.style.cssText = 'display:grid;gap:12px';
+    const r = document.createElement('button'); r.className = 'btn';
+    r.textContent = canVoice ? 'こたえを みる' : 'どこが おもしろい？';
     r.onclick = () => { st.revealed = true; log('こたえを表示'); renderHome(); };
-    const v = document.createElement('button'); v.className = 'btn'; v.textContent = '🎤 こえで こたえる'; v.onclick = openVoice;
-    g.append(r, v); area.append(g);
+    g.append(r);
+    if (canVoice) { const v = document.createElement('button'); v.className = 'btn'; v.textContent = '🎤 こえで こたえる'; v.onclick = openVoice; g.append(v); }
+    area.append(g);
   }
   for (const b of $('fbFun').children) b.setAttribute('aria-pressed', String(b.dataset.fun === st.fun));
   for (const b of $('fbLevel').children) b.setAttribute('aria-pressed', String(b.dataset.level === st.level));
@@ -468,7 +467,7 @@ function renderHistory() {
     b.innerHTML = `<span class="t"><span class="d"></span></span><span class="go" aria-hidden="true">›</span>`;
     b.querySelector('.d').textContent = `${fmtDate(h.day)} ${GENRE[h.c.genre]}`;
     b.querySelector('.t').append(txt(h.c, 'body'));
-    b.onclick = () => { st.today = h.c; st.revealed = true; st.fun = null; st.level = null; show('s1'); log('履歴から表示：' + h.c.id); };
+    b.onclick = () => { st.today = h.c; st.revealed = false; st.fun = null; st.level = null; show('s1'); log('履歴から表示：' + h.c.id); };
     L.append(b);
   });
 }
@@ -499,7 +498,7 @@ async function speak(text) {
 }
 $('s1speak').onclick = () => {
   const c = st.today;
-  const showAns = !kids() || st.revealed || c.genre === 'dajare';
+  const showAns = st.revealed;
   speak(txt(c, 'body') + (showAns ? '。　こたえは、' + txt(c, 'answer') : ''));
   log('よみあげ');
 };
@@ -647,7 +646,7 @@ $('micBtn').onclick = () => {
 $('tNotify').onclick = () => {
   const c = st.today;
   $('bnTitle').textContent = `【${GENRE[c.genre]}】` + txt(c, 'body');
-  $('bnBody').textContent = c.genre === 'dajare' ? '' : (kids() ? 'こたえは アプリで。こえで こたえてみよう' : 'こたえ：' + txt(c, 'answer') + '　→ だれかに おくろう');
+  $('bnBody').textContent = c.genre === 'dajare' ? 'ひらいて わらって、だれかに おくろう' : 'こたえは アプリで。こえで こたえてみよう';
   $('banner').hidden = false; log('通知を表示');
 };
 $('banner').onclick = () => { $('banner').hidden = true; show('s1'); log('通知タップ → ホーム'); };

@@ -1,5 +1,5 @@
 // きょうのひとネタ：オフライン用。更新時は VERSION を上げる
-const VERSION = 'hitoneta-v1';
+const VERSION = 'hitoneta-v2';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
