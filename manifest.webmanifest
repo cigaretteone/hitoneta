@@ -1,0 +1,17 @@
+{
+  "name": "きょうのひとネタ（テスト版）",
+  "short_name": "ひとネタ",
+  "description": "毎日のなぞなぞ・ダジャレを、家族や友だちに送って一緒に笑うアプリのテスト版",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#075a40",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

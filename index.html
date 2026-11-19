@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#075a40">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ひとネタ">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>きょうのひとネタ（テスト版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* 高齢者向けに単一テーマ（明るい背景・高コントラスト）で固定。左：スマホ画面、右：テスト操作パネル */
+  --bg: #e9f1ee;
+  --paper: #ffffff;
+  --ink: #13222b;
+  --muted: #4a5a62;
+  --primary: #075a40;
+  --primary-ink: #ffffff;
+  --line: #b9c9c2;
+  --nazo: #1f4fa3;
+  --dajare: #9a4a00;
+  --quiz: #6a2c91;
+  --good: #075a40;
+  --near: #8a5a00;
+  --font-display: "Zen Maru Gothic", "BIZ UDPGothic", "Hiragino Maru Gothic ProN", sans-serif;
+  --font-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --body-size: 28px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+button, input { font-family: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 4px solid #f2b705; outline-offset: 2px; }
+.wrap {
+  display: flex; flex-wrap: wrap; gap: 32px;
+  justify-content: center; align-items: flex-start;
+  padding: 24px 16px 48px;
+}
+
+/* ---- スマホ ---- */
+.phone {
+  width: 400px; max-width: 100%;
+  min-height: 780px;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 28px;
+  position: relative;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.screen { flex: 1; display: flex; flex-direction: column; padding: 20px 20px 24px; gap: 16px; }
+.screen[hidden] { display: none; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 56px; }
+.date { font-size: 20px; font-weight: 700; }
+.textbtn {
+  min-height: 56px; padding: 8px 16px; font-size: 20px; font-weight: 700;
+  background: var(--paper); color: var(--ink);
+  border: 2px solid var(--ink); border-radius: 14px; cursor: pointer;
+}
+.chip {
+  align-self: flex-start; font-size: 20px; font-weight: 700;
+  padding: 4px 14px; border-radius: 999px; color: #fff;
+}
+.chip.nazonazo { background: var(--nazo); }
+.chip.dajare { background: var(--dajare); }
+.chip.quiz { background: var(--quiz); }
+.body {
+  font-family: var(--font-display);
+  font-size: var(--body-size); line-height: 1.5;
+  margin: 0; text-wrap: balance; word-break: keep-all; overflow-wrap: anywhere;
+}
+.answer {
+  border: 3px solid var(--ink); border-radius: 16px; padding: 14px 16px;
+  font-size: calc(var(--body-size) * 0.86); font-weight: 700;
+}
+.answer small { display: block; font-size: 20px; font-weight: 400; color: var(--muted); margin-top: 4px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.btn {
+  min-height: 72px; width: 100%; padding: 10px 14px;
+  font-size: 24px; font-weight: 700; line-height: 1.3;
+  border-radius: 18px; cursor: pointer;
+  background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
+}
+.btn.primary { min-height: 96px; font-size: 30px; background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.btn.small { min-height: 64px; font-size: 22px; }
+.btn[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.btn:active { transform: translateY(1px); }
+.fb-title { font-size: 22px; font-weight: 700; margin: 4px 0 -4px; }
+.fb { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.fb .btn { min-height: 64px; font-size: clamp(15px, 4.4vw, 20px); padding: 4px; white-space: nowrap; letter-spacing: -0.02em; }
+.spacer { flex: 1; }
+.notice { font-size: 20px; background: #fff4d6; border: 2px solid #c99a1a; border-radius: 12px; padding: 10px 14px; }
+
+/* 通知バナー */
+.banner {
+  position: absolute; left: 10px; right: 10px; top: 10px; z-index: 5;
+  background: #f4f6f5; border: 2px solid var(--line); border-radius: 18px;
+  padding: 12px 14px; text-align: left; cursor: pointer; font-size: 18px; color: var(--ink);
+  box-shadow: 0 8px 24px rgba(19,34,43,.18);
+}
+.banner b { display: block; font-size: 19px; }
+.banner .app { font-size: 14px; color: var(--muted); }
+
+/* シート */
+.sheet-back { position: absolute; inset: 0; background: rgba(19,34,43,.45); z-index: 4; display: flex; align-items: flex-end; }
+.sheet-back[hidden] { display: none; }
+.sheet { width: 100%; background: var(--paper); border-radius: 24px 24px 0 0; padding: 20px; display: grid; gap: 14px; }
+.sheet h2 { margin: 0; font-size: 26px; }
+.preview { font-size: 16px; color: var(--muted); white-space: pre-wrap; border-left: 4px solid var(--line); padding-left: 10px; }
+a.btn { display: flex; align-items: center; justify-content: center; text-decoration: none; text-align: center; }
+
+/* 送ったよ */
+.center { align-items: center; justify-content: center; text-align: center; }
+.big { font-family: var(--font-display); font-size: 40px; margin: 0; }
+.smile { width: 120px; height: 120px; }
+
+/* 履歴 */
+.list { display: grid; gap: 0; border-top: 2px solid var(--line); }
+.item {
+  display: flex; align-items: center; gap: 12px; min-height: 88px; padding: 10px 4px;
+  border: 0; border-bottom: 2px solid var(--line); background: none; text-align: left; cursor: pointer; color: var(--ink);
+}
+.item .t { flex: 1; font-size: 22px; }
+.item .d { display: block; font-size: 17px; color: var(--muted); }
+.item .go { font-size: 30px; }
+
+/* 設定 */
+.set { display: grid; gap: 10px; }
+.set h3 { margin: 0; font-size: 22px; }
+.seg { display: grid; gap: 10px; }
+.seg.c3 { grid-template-columns: repeat(3, 1fr); }
+.seg.c2 { grid-template-columns: repeat(2, 1fr); }
+.seg .btn { min-height: 64px; font-size: 20px; }
+select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border-radius: 14px; padding: 0 12px; background: #fff; color: var(--ink); }
+
+/* 声で答える */
+.mic {
+  width: 180px; height: 180px; border-radius: 50%; align-self: center;
+  border: 0; background: var(--primary); color: #fff; font-size: 26px; font-weight: 700; cursor: pointer;
+}
+.mic.listening { background: #b3261e; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 18px rgba(179,38,30,.18); } }
+@media (prefers-reduced-motion: reduce) { .mic.listening { animation: none; } }
+.heard { font-size: 30px; text-align: center; min-height: 48px; font-weight: 700; }
+.verdict { font-family: var(--font-display); font-size: 40px; text-align: center; margin: 0; }
+.verdict.correct { color: var(--good); }
+.verdict.near { color: var(--near); }
+.typed { display: flex; gap: 8px; }
+.typed input { flex: 1; min-width: 0; font-size: 22px; min-height: 60px; border: 3px solid var(--line); border-radius: 14px; padding: 0 12px; }
+.typed .btn { width: auto; min-height: 60px; font-size: 20px; }
+.hint { font-size: 17px; color: var(--muted); text-align: center; }
+
+/* ---- テスト操作パネル ---- */
+.panel {
+  width: 380px; max-width: 100%;
+  background: #f8fbfa; border: 1px solid var(--line); border-radius: 16px; padding: 20px;
+  font-size: 15px; line-height: 1.55; display: grid; gap: 18px;
+}
+.panel h1 { font-size: 20px; margin: 0; text-wrap: balance; }
+.panel h2 { font-size: 15px; margin: 0 0 6px; letter-spacing: .02em; }
+.panel p { margin: 0; color: var(--muted); }
+.pbtn {
+  width: 100%; min-height: 44px; padding: 8px 12px; font-size: 15px; font-weight: 700; text-align: left;
+  background: #fff; color: var(--ink); border: 1.5px solid var(--ink); border-radius: 10px; cursor: pointer;
+}
+.pbtn + .pbtn { margin-top: 8px; }
+.pbtn:disabled { opacity: .5; cursor: default; }
+.meters { display: grid; gap: 6px; font-variant-numeric: tabular-nums; }
+.meter { display: grid; grid-template-columns: 84px 1fr 44px; gap: 8px; align-items: center; }
+.bar { height: 10px; background: #dfe8e4; border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--primary); }
+.log { font-size: 13px; color: var(--muted); max-height: 140px; overflow: auto; border-top: 1px solid var(--line); padding-top: 6px; }
+.status { font-size: 13px; color: var(--muted); }
+@media (max-width: 500px) {
+  .wrap { padding: 0 0 32px; gap: 0; }
+  .phone { border: 0; border-radius: 0; width: 100%; min-height: 100dvh; }
+  .panel { width: 100%; border-radius: 0; border-left: 0; border-right: 0; }
+}
+.ai-out { font-size: 14px; white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= スマホ画面 ================= -->
+  <div class="phone" id="phone" aria-label="アプリ画面の試作">
+
+    <button class="banner" id="banner" hidden aria-label="通知をひらく">
+      <span class="app">きょうのひとネタ ・ いま</span>
+      <b id="bnTitle"></b>
+      <span id="bnBody"></span>
+    </button>
+
+    <!-- S1 ホーム -->
+    <section class="screen" id="s1">
+      <div class="topbar">
+        <span class="date" id="s1date"></span>
+        <button class="textbtn" data-go="s6">⚙ せってい</button>
+      </div>
+      <span class="chip" id="s1chip"></span>
+      <p class="body" id="s1body"></p>
+      <div id="s1answerArea"></div>
+      <button class="btn small" id="s1speak">🔊 よみあげる</button>
+      <button class="btn primary" id="s1send">だれかに おくる</button>
+      <p class="fb-title" id="fbTitle">どうだった？</p>
+      <div class="fb" id="fbFun">
+        <button class="btn" data-fun="good" aria-pressed="false">おもしろい</button>
+        <button class="btn" data-fun="ok" aria-pressed="false">ふつう</button>
+        <button class="btn" data-fun="bad" aria-pressed="false">いまいち</button>
+      </div>
+      <div class="fb" id="fbLevel" hidden>
+        <button class="btn" data-level="hard" aria-pressed="false">むずかしすぎ</button>
+        <button class="btn" data-level="ok" aria-pressed="false">ちょうどよい</button>
+        <button class="btn" data-level="easy" aria-pressed="false">かんたんすぎ</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn small" data-go="s4">まえの ネタを みる</button>
+    </section>
+
+    <!-- S4 履歴 -->
+    <section class="screen" id="s4" hidden>
+      <div class="topbar">
+        <button class="textbtn" data-go="s1">← もどる</button>
+        <span class="date">まえの ネタ</span>
+      </div>
+      <div class="list" id="histList"></div>
+    </section>
+
+    <!-- S6 設定 -->
+    <section class="screen" id="s6" hidden>
+      <div class="topbar">
+        <button class="textbtn" data-go="s1">← もどる</button>
+        <span class="date">せってい</span>
+      </div>
+      <div class="set">
+        <h3>とどく じかん</h3>
+        <select id="setTime" aria-label="とどく じかん">
+          <option>6:30</option><option selected>7:00</option><option>7:30</option><option>8:00</option><option>9:00</option>
+        </select>
+      </div>
+      <div class="set">
+        <h3>1にちの かず</h3>
+        <div class="seg c2" id="setPerDay">
+          <button class="btn" data-v="1" aria-pressed="true">1こ</button>
+          <button class="btn" data-v="2" aria-pressed="false">2こ</button>
+        </div>
+      </div>
+      <div class="set">
+        <h3>もじの おおきさ</h3>
+        <div class="seg c3" id="setFont">
+          <button class="btn" data-v="28" aria-pressed="true">ふつう</button>
+          <button class="btn" data-v="34" aria-pressed="false">おおきい</button>
+          <button class="btn" data-v="40" aria-pressed="false">とても</button>
+        </div>
+      </div>
+      <div class="set">
+        <h3>つかう ひと</h3>
+        <div class="seg c3" id="setAud">
+          <button class="btn" data-v="adult" aria-pressed="true">おとな</button>
+          <button class="btn" data-v="kids" aria-pressed="false">こども</button>
+          <button class="btn" data-v="both" aria-pressed="false">いっしょ</button>
+        </div>
+      </div>
+      <p class="hint">かえると すぐ ほぞん されます</p>
+    </section>
+
+    <!-- S7 声で答える -->
+    <section class="screen" id="s7" hidden>
+      <div class="topbar">
+        <button class="textbtn" id="s7close">× やめる</button>
+      </div>
+      <p class="body" id="s7body"></p>
+      <div id="s7ask">
+        <button class="mic" id="micBtn" aria-label="おして はなす">🎤<br>おして<br>はなす</button>
+        <p class="heard" id="heard" aria-live="polite"></p>
+        <p class="hint" id="micHint"></p>
+        <form class="typed" id="typedForm">
+          
+          <input id="typedInput" aria-label="こたえを もじで にゅうりょく" placeholder="もじで こたえる（テスト用）" autocomplete="off">
+          <button class="btn" type="submit">こたえる</button>
+        </form>
+      </div>
+      <div id="s7result" hidden>
+        <p class="verdict" id="verdict" aria-live="assertive"></p>
+        <p class="hint" id="verdictSub" style="font-size:22px;color:var(--ink)"></p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn primary" id="s7send" hidden>だれかに だしてみる</button>
+      <button class="btn small" id="s7retry" hidden>🎤 もういちど いう</button>
+      <button class="btn small" id="s7reveal">こたえを みる</button>
+    </section>
+
+    <!-- S3 送ったよ -->
+    <section class="screen center" id="s3" hidden>
+      <svg class="smile" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="54" fill="#ffd45c" stroke="#13222b" stroke-width="4"/>
+        <circle cx="42" cy="50" r="6" fill="#13222b"/><circle cx="78" cy="50" r="6" fill="#13222b"/>
+        <path d="M36 72q24 24 48 0" fill="none" stroke="#13222b" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <p class="big">おくったよ！</p>
+      <p style="font-size:22px;margin:0">へんじが くると いいね</p>
+      <button class="btn small" data-go="s1" style="max-width:240px">もどる</button>
+    </section>
+
+    <!-- S2 送り方シート -->
+    <div class="sheet-back" id="s2" hidden>
+      <div class="sheet" role="dialog" aria-label="おくりかた">
+        <div class="topbar">
+          <h2>どうやって おくる？</h2>
+          <button class="textbtn" id="s2close">× とじる</button>
+        </div>
+        <a class="btn" id="lineWith" target="_blank" rel="noopener">LINEで こたえつき</a>
+        <a class="btn" id="lineHidden" target="_blank" rel="noopener">LINEで こたえを かくす</a>
+        <button class="btn" id="copyText">ほかの アプリで おくる</button>
+        <p class="preview" id="preview"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= テスト操作パネル ================= -->
+  <aside class="panel" aria-label="テスト用の操作">
+    <div>
+      <h1>テスト用の操作</h1>
+      <p>この上（パソコンでは左）がアプリ画面のテスト版。ネタは見本の7本。気づいたことはお知らせください。</p>
+    </div>
+    <div>
+      <h2>1. 朝の通知を再現</h2>
+      <button class="pbtn" id="tNotify">通知を表示する（タップでホームへ）</button>
+    </div>
+    <div>
+      <h2>2. 評価による個人調整（7章の式）</h2>
+      <div class="meters" id="meters"></div>
+      <button class="pbtn" id="tNextDay" style="margin-top:10px">翌日へ進める（調整後の重みで選び直す）</button>
+    </div>
+    <div>
+      <h2>機能の状態</h2>
+      <p class="status" id="capStatus">確認中…</p>
+    </div>
+    <div>
+      <h2>操作ログ</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ---------- 見本データ ---------- */
+const POOL = [
+  { id:'n1', genre:'nazonazo', aud:'kids', diff:2,
+    body:'パンは パンでも 食べられない パンは なあに？', kana:'ぱんは ぱんでも たべられない ぱんは なあに？',
+    answer:'フライパン', answerKana:'ふらいぱん', expl:'おりょうりに つかう どうぐだよ',
+    accept:['ふらいぱん'], near:['ぱん','なべ','鍋'] },
+  { id:'d1', genre:'dajare', aud:'both', diff:1,
+    body:'雨が ふってきたから、カエルは おうちに 帰る', kana:'あめが ふってきたから、かえるは おうちに かえる',
+    answer:'「カエル」と「帰る」が おなじ音', answerKana:'「かえる」と「かえる」が おなじ おと', expl:'',
+    accept:[], near:[] },
+  { id:'q1', genre:'quiz', aud:'both', diff:2,
+    body:'パンダの しっぽの 色は？ ①しろ ②くろ', kana:'ぱんだの しっぽの いろは？ ①しろ ②くろ',
+    answer:'①しろ', answerKana:'①しろ', expl:'くろだと おもう人が おおいよ',
+    accept:['しろ','白','いちばん','1ばん','1番','一番','まるいち','ほわいと'], near:['くろ','黒'] },
+  { id:'n2', genre:'nazonazo', aud:'both', diff:3,
+    body:'上は 大水、下は 大火事。これ なあに？', kana:'うえは おおみず、したは おおかじ。これ なあに？',
+    answer:'おふろ', answerKana:'おふろ', expl:'むかしの おふろは 下で 火を たいたよ',
+    accept:['おふろ','お風呂','ふろ','風呂'], near:['なべ','やかん','かじ'] },
+  { id:'n3', genre:'nazonazo', aud:'kids', diff:3,
+    body:'からだじゅう 歯だらけなのに、なにも かめない ものは なあに？', kana:'からだじゅう はだらけなのに、なにも かめない ものは なあに？',
+    answer:'くし（のこぎりも せいかい）', answerKana:'くし（のこぎりも せいかい）', expl:'かみのけを とかす どうぐだよ',
+    accept:['くし','櫛','のこぎり','鋸'], near:['はぶらし','歯ブラシ'] },
+  { id:'d2', genre:'dajare', aud:'both', diff:1,
+    body:'ふとんが ふっとんだ', kana:'ふとんが ふっとんだ',
+    answer:'「ふとん」と「ふっとんだ」', answerKana:'「ふとん」と「ふっとんだ」', expl:'', accept:[], near:[] },
+  { id:'q2', genre:'quiz', aud:'adult', diff:3,
+    body:'1年で いちばん 昼が 長い日を なんと いう？ ①夏至 ②冬至', kana:'1ねんで いちばん ひるが ながい ひを なんと いう？ ①げし ②とうじ',
+    answer:'①夏至（げし）', answerKana:'①げし', expl:'6月の 下旬だよ',
+    accept:['げし','夏至','いちばん','1ばん','1番','一番','まるいち'], near:['とうじ','冬至'] },
+];
+const GENRE = { nazonazo:'なぞなぞ', dajare:'ダジャレ', quiz:'クイズ' };
+
+/* ---------- 状態 ---------- */
+const st = {
+  aud:'adult', font:28, perDay:1, day:0,
+  prefs:{ d:2.5, w:{ nazonazo:1, dajare:1, quiz:1 }, recent:[] },
+  today:null, history:[], revealed:false, fun:null, level:null, tries:0, aiItem:null,
+};
+const D0 = new Date(2026, 10, 19);
+const $ = id => document.getElementById(id);
+const log = msg => { const p = document.createElement('div'); p.textContent = new Date().toLocaleTimeString('ja-JP') + '  ' + msg; $('log').prepend(p); };
+
+function fmtDate(off) {
+  const d = new Date(D0); d.setDate(d.getDate() + off);
+  return `${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+}
+const kids = () => st.aud === 'kids' || st.aud === 'both';
+const txt = (c, k) => (st.aud === 'kids' ? c[k === 'body' ? 'kana' : 'answerKana'] : c[k]);
+
+/* ---------- 選定（設計書7章） ---------- */
+function eligible(c) {
+  if (st.aud === 'kids') return c.aud === 'kids';
+  if (st.aud === 'both') return c.aud === 'kids' || c.aud === 'both';
+  return c.aud === 'both' || c.aud === 'adult';
+}
+function pick(excludeIds) {
+  const r = st.prefs.recent.slice(-2);
+  let best = null, bs = -1;
+  for (const c of POOL) {
+    if (!eligible(c) || excludeIds.includes(c.id)) continue;
+    const s = st.prefs.w[c.genre] * Math.exp(-((c.diff - st.prefs.d) ** 2) / 2) * (r.includes(c.genre) ? 0.5 : 1);
+    if (s > bs) { bs = s; best = c; }
+  }
+  return best || POOL.find(eligible);
+}
+
+/* ---------- 描画 ---------- */
+function show(id) {
+  for (const s of ['s1','s3','s4','s6','s7']) $(s).hidden = s !== id;
+  $('s2').hidden = true;
+  if (id === 's1') renderHome();
+  if (id === 's4') renderHistory();
+}
+function renderHome() {
+  const c = st.today;
+  $('s1date').textContent = fmtDate(st.day);
+  $('s1chip').textContent = (st.aud === 'kids' ? '' : '【') + (st.aud === 'kids' ? { nazonazo:'なぞなぞ', dajare:'だじゃれ', quiz:'くいず' }[c.genre] : GENRE[c.genre]) + (st.aud === 'kids' ? '' : '】');
+  $('s1chip').className = 'chip ' + c.genre;
+  $('s1body').textContent = txt(c, 'body');
+  const area = $('s1answerArea'); area.innerHTML = '';
+  const canVoice = c.genre !== 'dajare';
+  if (!kids() || st.revealed || !canVoice) {
+    const a = document.createElement('div'); a.className = 'answer';
+    a.textContent = (c.genre === 'dajare' ? 'オチ：' : (st.aud === 'kids' ? 'こたえ：' : 'こたえ：')) + txt(c, 'answer');
+    if (c.expl) { const s = document.createElement('small'); s.textContent = c.expl; a.append(s); }
+    area.append(a);
+    if (!kids() && canVoice) {
+      const b = document.createElement('button'); b.className = 'btn small'; b.style.marginTop = '12px';
+      b.textContent = '🎤 こえで あそぶ'; b.onclick = openVoice; area.append(b);
+    }
+  } else {
+    const g = document.createElement('div'); g.className = 'row2';
+    const r = document.createElement('button'); r.className = 'btn'; r.textContent = 'こたえを みる';
+    r.onclick = () => { st.revealed = true; log('こたえを表示'); renderHome(); };
+    const v = document.createElement('button'); v.className = 'btn'; v.textContent = '🎤 こえで こたえる'; v.onclick = openVoice;
+    g.append(r, v); area.append(g);
+  }
+  for (const b of $('fbFun').children) b.setAttribute('aria-pressed', String(b.dataset.fun === st.fun));
+  for (const b of $('fbLevel').children) b.setAttribute('aria-pressed', String(b.dataset.level === st.level));
+  $('fbLevel').hidden = !st.fun;
+  document.documentElement.style.setProperty('--body-size', st.font + 'px');
+  renderMeters();
+}
+function renderHistory() {
+  const L = $('histList'); L.innerHTML = '';
+  if (!st.history.length) { L.innerHTML = '<p style="font-size:22px">まだ ありません。テスト操作の「翌日へ進める」で ふえます。</p>'; return; }
+  st.history.slice().reverse().forEach(h => {
+    const b = document.createElement('button'); b.className = 'item';
+    b.innerHTML = `<span class="t"><span class="d"></span></span><span class="go" aria-hidden="true">›</span>`;
+    b.querySelector('.d').textContent = `${fmtDate(h.day)} ${GENRE[h.c.genre]}`;
+    b.querySelector('.t').append(txt(h.c, 'body'));
+    b.onclick = () => { st.today = h.c; st.revealed = true; st.fun = null; st.level = null; show('s1'); log('履歴から表示：' + h.c.id); };
+    L.append(b);
+  });
+}
+function renderMeters() {
+  const m = $('meters'); m.innerHTML = '';
+  const row = (label, val, max) => {
+    const d = document.createElement('div'); d.className = 'meter';
+    d.innerHTML = `<span></span><span class="bar"><i style="width:${Math.min(100, val / max * 100)}%"></i></span><span></span>`;
+    d.children[0].textContent = label; d.children[2].textContent = val.toFixed(2); m.append(d);
+  };
+  row('難易度 d', st.prefs.d, 5);
+  row('なぞなぞ', st.prefs.w.nazonazo, 2);
+  row('ダジャレ', st.prefs.w.dajare, 2);
+  row('クイズ', st.prefs.w.quiz, 2);
+}
+
+/* ---------- 読み上げ ---------- */
+let tts = null;
+async function speak(text) {
+  try {
+    if (tts) { await tts.speak(text, { language:'ja', rate:0.85 }); return; }
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 0.85;
+      await new Promise(r => { u.onend = r; u.onerror = r; speechSynthesis.speak(u); });
+    }
+  } catch (e) { log('読み上げできませんでした：' + (e.code || e.message || e)); }
+}
+$('s1speak').onclick = () => {
+  const c = st.today;
+  const showAns = !kids() || st.revealed || c.genre === 'dajare';
+  speak(txt(c, 'body') + (showAns ? '。　こたえは、' + txt(c, 'answer') : ''));
+  log('よみあげ');
+};
+
+/* ---------- 共有 ---------- */
+function shareText(withAns) {
+  const c = st.today, k = st.aud === 'kids';
+  const head = `【きょうの ${k ? { nazonazo:'なぞなぞ', dajare:'だじゃれ', quiz:'くいず' }[c.genre] : GENRE[c.genre]}】`;
+  if (c.genre === 'dajare' || withAns) return `${head}\n${txt(c,'body')}\n${c.genre === 'dajare' ? '' : 'こたえ：'}${c.genre === 'dajare' ? '' : txt(c,'answer')}`.trim();
+  return `${head}\n${txt(c,'body')}\nわかったら へんじしてね。こたえは あとで おしえるね！`;
+}
+function openShare() {
+  const c = st.today;
+  $('lineWith').href = 'https://line.me/R/share?text=' + encodeURIComponent(shareText(true));
+  $('lineHidden').href = 'https://line.me/R/share?text=' + encodeURIComponent(shareText(false));
+  $('lineHidden').hidden = c.genre === 'dajare';
+  $('lineWith').textContent = c.genre === 'dajare' ? 'LINEで おくる' : 'LINEで こたえつき';
+  $('preview').textContent = 'おくる文のみほん：\n' + shareText(true);
+  $('s2').hidden = false;
+  log('おくる → シート表示');
+}
+$('s1send').onclick = openShare;
+$('s7send').onclick = openShare;
+$('s2close').onclick = () => { $('s2').hidden = true; };
+$('s2').addEventListener('click', e => { if (e.target === $('s2')) $('s2').hidden = true; });
+const sent = how => { log('共有：' + how); setTimeout(() => show('s3'), 400); setTimeout(() => { if (!$('s3').hidden) show('s1'); }, 3600); };
+$('lineWith').onclick = () => sent('LINE こたえつき');
+$('lineHidden').onclick = () => sent('LINE こたえをかくす');
+$('copyText').onclick = async () => {
+  if (navigator.share) {
+    try { await navigator.share({ text: shareText(true) }); sent('共有シート'); }
+    catch (e) { if (e && e.name !== 'AbortError') log('共有シート失敗：' + e.name); }
+    return;
+  }
+  try { await navigator.clipboard.writeText(shareText(true)); sent('文をコピー'); }
+  catch { $('preview').textContent = 'コピーできませんでした。下の文を長押しして コピーしてください：\n' + shareText(true); }
+};
+
+/* ---------- 評価 ---------- */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+$('fbFun').onclick = e => {
+  const b = e.target.closest('[data-fun]'); if (!b) return;
+  const prev = st.fun, g = st.today.genre;
+  if (prev === 'good') st.prefs.w[g] -= 0.15; if (prev === 'bad') st.prefs.w[g] += 0.15;   // 押し直しは前回分を戻す
+  st.fun = b.dataset.fun;
+  if (st.fun === 'good') st.prefs.w[g] += 0.15; if (st.fun === 'bad') st.prefs.w[g] -= 0.15;
+  st.prefs.w[g] = clamp(st.prefs.w[g], 0.3, 2.0);
+  log('評価：' + b.textContent); renderHome();
+};
+$('fbLevel').onclick = e => {
+  const b = e.target.closest('[data-level]'); if (!b) return;
+  const prev = st.level;
+  if (prev === 'hard') st.prefs.d += 0.3; if (prev === 'easy') st.prefs.d -= 0.3;
+  st.level = b.dataset.level;
+  if (st.level === 'hard') st.prefs.d -= 0.3; if (st.level === 'easy') st.prefs.d += 0.3;
+  st.prefs.d = clamp(st.prefs.d, 1, 5);
+  log('難易度：' + b.textContent); renderHome();
+};
+
+/* ---------- 声で答える ---------- */
+let dict = null, heardText = '', silenceT = null, maxT = null, listening = false;
+function norm(s) {
+  return (s || '').normalize('NFKC')
+    .replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+    .replace(/[\s、。，．！？!?・ー「」（）()]/g, '')
+    .replace(/(だよね|だよ|です|でしょう|でしょ|かな|だね|だと思う|とおもう)$/,'');
+}
+function lev(a, b) {
+  const m = [...Array(b.length + 1).keys()];
+  for (let i = 1; i <= a.length; i++) { let p = m[0]; m[0] = i;
+    for (let j = 1; j <= b.length; j++) { const t = m[j]; m[j] = Math.min(m[j] + 1, m[j-1] + 1, p + (a[i-1] === b[j-1] ? 0 : 1)); p = t; } }
+  return m[b.length];
+}
+function judge(heard, c) {
+  const h = norm(heard); if (!h) return 'empty';
+  const acc = c.accept.map(norm), near = c.near.map(norm);
+  if (acc.some(a => h === a || h.includes(a))) return 'correct';
+  if (acc.some(a => a.length >= 4 && lev(h, a) <= 1)) return 'correct';
+  if (near.some(a => h === a || h.includes(a)) || acc.some(a => a.length >= 4 && lev(h, a) === 2)) return 'near';
+  return 'wrong';
+}
+function openVoice() {
+  const c = st.today; st.tries = 0;
+  $('s7body').textContent = txt(c, 'body');
+  $('s7ask').hidden = false; $('s7result').hidden = true;
+  $('s7send').hidden = true; $('s7retry').hidden = true; $('s7reveal').hidden = false;
+  $('heard').textContent = ''; $('typedInput').value = '';
+  $('micBtn').hidden = !dict;
+  $('micHint').textContent = dict ? 'ボタンを おしてから こたえを いってね' : 'この ブラウザでは マイクが つかえないので、もじで こたえてね（iPhoneはSafari、AndroidはChromeで マイクが つかえます）';
+  show('s7');
+  speak(txt(c, 'body'));
+  log('声で答える：開始');
+}
+function finishAnswer(text, via) {
+  const c = st.today; st.tries++;
+  const v = judge(text, c);
+  log(`判定（${via}）：「${text}」→ ${v}`);
+  if (v === 'empty') { $('micHint').textContent = 'きこえなかったよ。もういちど おしてね'; return; }
+  $('s7ask').hidden = true; $('s7result').hidden = false;
+  const ans = txt(c, 'answer');
+  let say;
+  if (v === 'correct') {
+    $('verdict').textContent = 'せいかい！'; $('verdict').className = 'verdict correct';
+    $('verdictSub').textContent = 'こたえ：' + ans;
+    say = 'せいかい！　こたえは、' + ans + '。だれかに だしてみよう';
+    if (st.tries === 1) st.prefs.d = clamp(st.prefs.d + 0.1, 1, 5);
+    $('s7send').hidden = false; $('s7retry').hidden = true; $('s7reveal').hidden = true;
+  } else if (st.tries >= 3) {
+    $('verdict').textContent = 'こたえは…'; $('verdict').className = 'verdict';
+    $('verdictSub').textContent = ans; say = 'こたえは、' + ans + 'でした';
+    st.prefs.d = clamp(st.prefs.d - 0.1, 1, 5);
+    $('s7send').hidden = false; $('s7retry').hidden = true; $('s7reveal').hidden = true;
+  } else {
+    $('verdict').textContent = v === 'near' ? 'おしい！' : 'ちがうみたい';
+    $('verdict').className = 'verdict ' + (v === 'near' ? 'near' : '');
+    $('verdictSub').textContent = `「${text}」って きこえたよ。あと ${3 - st.tries}かい`;
+    say = v === 'near' ? 'おしい！　もうちょっと' : 'ちがうみたい。もういちど どうぞ';
+    $('s7retry').hidden = false; $('s7send').hidden = true;
+  }
+  st.revealed = v === 'correct' || st.tries >= 3 ? true : st.revealed;
+  renderMeters();
+  speak(say);
+}
+$('s7retry').onclick = () => { $('s7ask').hidden = false; $('s7result').hidden = true; $('s7retry').hidden = true; $('heard').textContent = ''; $('typedInput').value = ''; };
+$('s7reveal').onclick = () => { st.revealed = true; log('声で答える：こたえを みる'); show('s1'); };
+$('s7close').onclick = () => { if (listening && dict) dict.stop().catch(()=>{}); show('s1'); };
+$('typedForm').onsubmit = e => { e.preventDefault(); const v = $('typedInput').value.trim(); if (v) finishAnswer(v, '文字'); };
+
+function armSilence() { clearTimeout(silenceT); silenceT = setTimeout(() => { if (listening) dict.stop().catch(()=>{}); }, 1600); }
+$('micBtn').onclick = () => {
+  if (!dict) return;
+  if (listening) { dict.stop().catch(()=>{}); return; }
+  heardText = ''; $('heard').textContent = '';
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  dict.start().then(() => {}).catch(e => {
+    const code = e && e.code;
+    $('micHint').textContent = code === 'not_granted' ? 'マイクが つかえません。もじで こたえてね' : 'マイクを はじめられませんでした。もういちど おしてね';
+    if (code === 'not_granted') $('micBtn').hidden = true;
+    log('マイク開始失敗：' + (code || e));
+  });
+  clearTimeout(maxT); maxT = setTimeout(() => { if (listening) dict.stop().catch(()=>{}); }, 8000);
+};
+
+/* ---------- テスト操作 ---------- */
+$('tNotify').onclick = () => {
+  const c = st.today;
+  $('bnTitle').textContent = `【${GENRE[c.genre]}】` + txt(c, 'body');
+  $('bnBody').textContent = c.genre === 'dajare' ? '' : (kids() ? 'こたえは アプリで。こえで こたえてみよう' : 'こたえ：' + txt(c, 'answer') + '　→ だれかに おくろう');
+  $('banner').hidden = false; log('通知を表示');
+};
+$('banner').onclick = () => { $('banner').hidden = true; show('s1'); log('通知タップ → ホーム'); };
+$('tNextDay').onclick = () => {
+  st.history.push({ day: st.day, c: st.today });
+  st.prefs.recent.push(st.today.genre);
+  st.day++; st.revealed = false; st.fun = null; st.level = null; st.aiItem = null;
+  const used = st.history.slice(-3).map(h => h.c.id);
+  st.today = pick(used);
+  log(`翌日へ：${st.today.id}（${GENRE[st.today.genre]}・難易度${st.today.diff}）を選定`);
+  show('s1');
+};
+
+/* 設定 */
+function segBind(id, fn) {
+  $(id).onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return;
+    for (const x of $(id).children) x.setAttribute('aria-pressed', String(x === b)); fn(b.dataset.v); };
+}
+segBind('setFont', v => { st.font = +v; document.documentElement.style.setProperty('--body-size', v + 'px'); log('文字の大きさ：' + v + 'pt'); });
+segBind('setPerDay', v => { st.perDay = +v; log('1日の数：' + v); });
+segBind('setAud', v => {
+  st.aud = v; st.prefs.d = { kids:1.5, both:2.0, adult:2.5 }[v]; st.revealed = false;
+  if (!eligible(st.today)) st.today = pick([]);
+  log('つかうひと：' + { adult:'おとな', kids:'こども', both:'いっしょ' }[v]);
+});
+$('setTime').onchange = e => log('とどく時間：' + e.target.value);
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+
+/* ---------- 起動 ---------- */
+st.today = pick([]);
+show('s1');
+log('起動：' + st.today.id);
+
+function makeDict() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  let rec = null, cbP = () => {}, cbF = () => {}, cbS = () => {};
+  return {
+    onPartial(f) { cbP = f; }, onFinal(f) { cbF = f; }, onState(f) { cbS = f; },
+    start() {
+      return new Promise((res, rej) => {
+        rec = new SR(); rec.lang = 'ja-JP'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+        rec.onstart = () => { cbS({ state: 'listening' }); res(); };
+        rec.onresult = e => {
+          let fin = '', part = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const r = e.results[i]; if (r.isFinal) fin += r[0].transcript; else part += r[0].transcript;
+          }
+          if (fin) cbF({ text: fin }); else if (part) cbP({ text: part });
+        };
+        rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') rej({ code: 'not_granted' }); };
+        rec.onend = () => cbS({ state: 'idle' });
+        try { rec.start(); } catch (err) { rej(err); }
+      });
+    },
+    stop() { try { rec && rec.stop(); } catch {} return Promise.resolve(); },
+  };
+}
+dict = makeDict();
+$('capStatus').textContent = [
+  '読み上げ：' + ('speechSynthesis' in window ? '使えます' : '使えません'),
+  'マイク：' + (dict ? '使えます' : '使えません（文字入力で代用）'),
+  '共有シート：' + (navigator.share ? '使えます' : '使えません（文をコピー）'),
+].join(' ／ ');
+if (dict) {
+  let was = false;
+  dict.onPartial(({ text }) => { $('heard').textContent = (heardText + text) || '…'; armSilence(); });
+  dict.onFinal(({ text }) => { heardText += text; $('heard').textContent = heardText; armSilence(); });
+  dict.onState(({ state }) => {
+    listening = state === 'listening';
+    $('micBtn').classList.toggle('listening', listening);
+    $('micBtn').innerHTML = listening ? '● きいてるよ' : '🎤<br>おして<br>はなす';
+    if (listening) { was = true; return; }
+    clearTimeout(silenceT); clearTimeout(maxT);
+    if (heardText) { finishAnswer(heardText, '声'); heardText = ''; }
+    else if (was) $('micHint').textContent = 'きこえなかったよ。もういちど おしてね';
+    was = false;
+  });
+}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
