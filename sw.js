@@ -1,5 +1,5 @@
 // きょうのひとネタ：オフライン用と毎日の通知の表示。更新時は VERSION を上げる
-const VERSION = 'hitoneta-v4';
+const VERSION = 'hitoneta-v5';
 const ASSETS = ['./', './index.html', './pool.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 importScripts('pool.js');
 
