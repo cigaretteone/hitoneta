@@ -25,7 +25,6 @@
   --primary-ink: #ffffff;
   --line: #b9c9c2;
   --nazo: #1f4fa3;
-  --dajare: #9a4a00;
   --quiz: #6a2c91;
   --good: #075a40;
   --near: #8a5a00;
@@ -75,7 +74,6 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 4px solid 
   padding: 4px 14px; border-radius: 999px; color: #fff;
 }
 .chip.nazonazo { background: var(--nazo); }
-.chip.dajare { background: var(--dajare); }
 .chip.quiz { background: var(--quiz); }
 .body {
   font-family: var(--font-display);
@@ -334,7 +332,7 @@ select { font-size: 22px; min-height: 64px; border: 3px solid var(--ink); border
   <aside class="panel" aria-label="テスト用の操作">
     <div>
       <h1>テスト用の操作</h1>
-      <p>この上（パソコンでは左）がアプリ画面のテスト版。ネタは見本の7本。気づいたことはお知らせください。</p>
+      <p>この上（パソコンでは左）がアプリ画面のテスト版。ネタは見本のなぞなぞ・クイズ7本。気づいたことはお知らせください。</p>
     </div>
     <div>
       <h2>1. 朝の通知を再現</h2>
@@ -363,10 +361,10 @@ const POOL = [
     body:'パンは パンでも 食べられない パンは なあに？', kana:'ぱんは ぱんでも たべられない ぱんは なあに？',
     answer:'フライパン', answerKana:'ふらいぱん', expl:'おりょうりに つかう どうぐだよ',
     accept:['ふらいぱん'], near:['ぱん','なべ','鍋'] },
-  { id:'d1', genre:'dajare', aud:'both', diff:1,
-    body:'雨が ふってきたから、カエルは おうちに 帰る', kana:'あめが ふってきたから、かえるは おうちに かえる',
-    answer:'「カエル」と「帰る」が おなじ音', answerKana:'「かえる」と「かえる」が おなじ おと', expl:'',
-    accept:[], near:[] },
+  { id:'n4', genre:'nazonazo', aud:'kids', diff:1,
+    body:'雨が ふると ひらいて、はれると とじる ものは なあに？', kana:'あめが ふると ひらいて、はれると とじる ものは なあに？',
+    answer:'かさ', answerKana:'かさ', expl:'あめの ひの おともだちだよ',
+    accept:['かさ','傘','あまがさ','雨傘'], near:['かっぱ','れいんこーと','ながぐつ','長靴'] },
   { id:'q1', genre:'quiz', aud:'both', diff:2,
     body:'パンダの しっぽの 色は？ ①しろ ②くろ', kana:'ぱんだの しっぽの いろは？ ①しろ ②くろ',
     answer:'①しろ', answerKana:'①しろ', expl:'くろだと おもう人が おおいよ',
@@ -379,20 +377,21 @@ const POOL = [
     body:'からだじゅう 歯だらけなのに、なにも かめない ものは なあに？', kana:'からだじゅう はだらけなのに、なにも かめない ものは なあに？',
     answer:'くし（のこぎりも せいかい）', answerKana:'くし（のこぎりも せいかい）', expl:'かみのけを とかす どうぐだよ',
     accept:['くし','櫛','のこぎり','鋸'], near:['はぶらし','歯ブラシ'] },
-  { id:'d2', genre:'dajare', aud:'both', diff:1,
-    body:'ふとんが ふっとんだ', kana:'ふとんが ふっとんだ',
-    answer:'「ふとん」と「ふっとんだ」', answerKana:'「ふとん」と「ふっとんだ」', expl:'', accept:[], near:[] },
+  { id:'q3', genre:'quiz', aud:'both', diff:1,
+    body:'ペンギンは 鳥の なかま？ ①はい ②いいえ', kana:'ぺんぎんは とりの なかま？ ①はい ②いいえ',
+    answer:'①はい', answerKana:'①はい', expl:'そらは とべないけど、とりの なかまだよ',
+    accept:['はい','いちばん','1ばん','1番','一番','まるいち'], near:['いいえ','にばん','2番'] },
   { id:'q2', genre:'quiz', aud:'adult', diff:3,
     body:'1年で いちばん 昼が 長い日を なんと いう？ ①夏至 ②冬至', kana:'1ねんで いちばん ひるが ながい ひを なんと いう？ ①げし ②とうじ',
     answer:'①夏至（げし）', answerKana:'①げし', expl:'6月の 下旬だよ',
     accept:['げし','夏至','いちばん','1ばん','1番','一番','まるいち'], near:['とうじ','冬至'] },
 ];
-const GENRE = { nazonazo:'なぞなぞ', dajare:'ダジャレ', quiz:'クイズ' };
+const GENRE = { nazonazo:'なぞなぞ', quiz:'クイズ' };
 
 /* ---------- 状態 ---------- */
 const st = {
   aud:'adult', font:28, perDay:1, day:0,
-  prefs:{ d:2.5, w:{ nazonazo:1, dajare:1, quiz:1 }, recent:[] },
+  prefs:{ d:2.5, w:{ nazonazo:1, quiz:1 }, recent:[] },
   today:null, history:[], revealed:false, fun:null, level:null, tries:0, aiItem:null,
 };
 const D0 = new Date(2026, 10, 19);
@@ -433,14 +432,14 @@ function show(id) {
 function renderHome() {
   const c = st.today;
   $('s1date').textContent = fmtDate(st.day);
-  $('s1chip').textContent = (st.aud === 'kids' ? '' : '【') + (st.aud === 'kids' ? { nazonazo:'なぞなぞ', dajare:'だじゃれ', quiz:'くいず' }[c.genre] : GENRE[c.genre]) + (st.aud === 'kids' ? '' : '】');
+  $('s1chip').textContent = (st.aud === 'kids' ? '' : '【') + (st.aud === 'kids' ? { nazonazo:'なぞなぞ', quiz:'くいず' }[c.genre] : GENRE[c.genre]) + (st.aud === 'kids' ? '' : '】');
   $('s1chip').className = 'chip ' + c.genre;
   $('s1body').textContent = txt(c, 'body');
   const area = $('s1answerArea'); area.innerHTML = '';
-  const canVoice = c.genre !== 'dajare';
+  const canVoice = true;
   if (st.revealed) {
     const a = document.createElement('div'); a.className = 'answer';
-    a.textContent = (c.genre === 'dajare' ? 'オチ：' : 'こたえ：') + txt(c, 'answer');
+    a.textContent = 'こたえ：' + txt(c, 'answer');
     if (c.expl) { const s = document.createElement('small'); s.textContent = c.expl; a.append(s); }
     area.append(a);
   } else {
@@ -480,7 +479,6 @@ function renderMeters() {
   };
   row('難易度 d', st.prefs.d, 5);
   row('なぞなぞ', st.prefs.w.nazonazo, 2);
-  row('ダジャレ', st.prefs.w.dajare, 2);
   row('クイズ', st.prefs.w.quiz, 2);
 }
 
@@ -506,16 +504,14 @@ $('s1speak').onclick = () => {
 /* ---------- 共有 ---------- */
 function shareText(withAns) {
   const c = st.today, k = st.aud === 'kids';
-  const head = `【きょうの ${k ? { nazonazo:'なぞなぞ', dajare:'だじゃれ', quiz:'くいず' }[c.genre] : GENRE[c.genre]}】`;
-  if (c.genre === 'dajare' || withAns) return `${head}\n${txt(c,'body')}\n${c.genre === 'dajare' ? '' : 'こたえ：'}${c.genre === 'dajare' ? '' : txt(c,'answer')}`.trim();
+  const head = `【きょうの ${k ? { nazonazo:'なぞなぞ', quiz:'くいず' }[c.genre] : GENRE[c.genre]}】`;
+  if (withAns) return `${head}\n${txt(c,'body')}\nこたえ：${txt(c,'answer')}`;
   return `${head}\n${txt(c,'body')}\nわかったら へんじしてね。こたえは あとで おしえるね！`;
 }
 function openShare() {
   const c = st.today;
   $('lineWith').href = 'https://line.me/R/share?text=' + encodeURIComponent(shareText(true));
   $('lineHidden').href = 'https://line.me/R/share?text=' + encodeURIComponent(shareText(false));
-  $('lineHidden').hidden = c.genre === 'dajare';
-  $('lineWith').textContent = c.genre === 'dajare' ? 'LINEで おくる' : 'LINEで こたえつき';
   $('preview').textContent = 'おくる文のみほん：\n' + shareText(true);
   $('s2').hidden = false;
   log('おくる → シート表示');
@@ -646,7 +642,7 @@ $('micBtn').onclick = () => {
 $('tNotify').onclick = () => {
   const c = st.today;
   $('bnTitle').textContent = `【${GENRE[c.genre]}】` + txt(c, 'body');
-  $('bnBody').textContent = c.genre === 'dajare' ? 'ひらいて わらって、だれかに おくろう' : 'こたえは アプリで。こえで こたえてみよう';
+  $('bnBody').textContent = 'こたえは アプリで。こえで こたえてみよう';
   $('banner').hidden = false; log('通知を表示');
 };
 $('banner').onclick = () => { $('banner').hidden = true; show('s1'); log('通知タップ → ホーム'); };
